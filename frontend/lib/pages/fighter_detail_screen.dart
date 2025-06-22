@@ -7,10 +7,8 @@ class FighterDetailScreen extends StatefulWidget {
   /// ID of the fighter to fetch.
   final String fighterId;
 
-  const FighterDetailScreen({
-    Key? key,
-    required this.fighterId,
-  }) : super(key: key);
+  const FighterDetailScreen({Key? key, required this.fighterId})
+    : super(key: key);
 
   @override
   _FighterDetailScreenState createState() => _FighterDetailScreenState();
@@ -29,9 +27,7 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Fighter Details'),
-      ),
+      appBar: AppBar(title: const Text('Fighter Details')),
       body: FutureBuilder<FighterDetail>(
         future: _futureFighter,
         builder: (context, snapshot) {
@@ -47,14 +43,9 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
 
           final fighter = snapshot.data!;
 
-          // 1. Normalize UFC URL to avoid redirect
-          final directUrl = fighter.imgUrl.replaceFirst(
-            '://ufc.com/',
-            '://www.ufc.com/',
-          );
-          // 2. Proxy through local backend to inject CORS headers
-          final proxiedUrl =
-              'http://localhost:3000/img?url=\${Uri.encodeComponent(directUrl)}';
+          // Proxy image requests through a CORS proxy to prevent browser
+          // cross-origin errors when running on the web.
+          final proxiedUrl = 'https://proxy.cors.sh/${fighter.imgUrl}';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -64,22 +55,24 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
                 if (fighter.imgUrl.isNotEmpty)
                   Center(
                     child: Image.network(
-                      proxiedUrl, // use proxied URL
+                      proxiedUrl,
                       height: 200,
                       fit: BoxFit.contain,
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
                         return Center(
                           child: CircularProgressIndicator(
-                            value: progress.expectedTotalBytes != null
-                                ? progress.cumulativeBytesLoaded /
-                                    progress.expectedTotalBytes!
-                                : null,
+                            value:
+                                progress.expectedTotalBytes != null
+                                    ? progress.cumulativeBytesLoaded /
+                                        progress.expectedTotalBytes!
+                                    : null,
                           ),
                         );
                       },
-                      errorBuilder: (context, error, stack) =>
-                          const Icon(Icons.broken_image, size: 80),
+                      errorBuilder:
+                          (context, error, stack) =>
+                              const Icon(Icons.broken_image, size: 80),
                     ),
                   ),
 
@@ -101,12 +94,14 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
                   ),
 
                 const Divider(height: 32),
-                Text('Record: \${fighter.wins}-\${fighter.losses}-\${fighter.draws}'),
-                Text('Age: \${fighter.age}'),
-                Text('Height: \${fighter.height}"'),
-                Text('Weight: \${fighter.weight} lbs'),
-                Text('Reach: \${fighter.reach}"'),
-                Text('Leg Reach: \${fighter.legReach}"'),
+                Text(
+                  'Record: ${fighter.wins}-${fighter.losses}-${fighter.draws}',
+                ),
+                Text('Age: ${fighter.age}'),
+                Text('Height: ${fighter.height}"'),
+                Text('Weight: ${fighter.weight} lbs'),
+                Text('Reach: ${fighter.reach}"'),
+                Text('Leg Reach: ${fighter.legReach}"'),
 
                 const Divider(height: 32),
                 _infoRow('Division', fighter.category),
@@ -129,7 +124,7 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: RichText(
         text: TextSpan(
-          text: '\$label: ',
+          text: '$label: ',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black,

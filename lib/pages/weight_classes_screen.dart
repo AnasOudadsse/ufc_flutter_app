@@ -1,13 +1,19 @@
+// lib/screens/weight_classes_screen.dart
+
 import 'package:flutter/material.dart';
 import '../models/ranking.dart';
 import '../services/api_service.dart';
 import 'fighter_list_screen.dart';
 
-/// Shows all weight-class divisions for the chosen gender.
+/// Screen showing weight-class divisions filtered by gender (men vs women).
 class WeightClassesScreen extends StatefulWidget {
-  final String gender; // 'men' or 'women'
+  /// 'men' or 'women'
+  final String gender;
 
-  const WeightClassesScreen({Key? key, required this.gender}) : super(key: key);
+  const WeightClassesScreen({
+    Key? key,
+    required this.gender,
+  }) : super(key: key);
 
   @override
   _WeightClassesScreenState createState() => _WeightClassesScreenState();
@@ -19,7 +25,7 @@ class _WeightClassesScreenState extends State<WeightClassesScreen> {
   @override
   void initState() {
     super.initState();
-    // Kick off the network call only once
+    // 1. Start fetching all divisions from the API
     _futureRankings = ApiService().getRankings();
   }
 
@@ -27,6 +33,7 @@ class _WeightClassesScreenState extends State<WeightClassesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // 2. Dynamic title based on selected gender
         title: Text(
           widget.gender == 'men' ? 'Men’s Divisions' : 'Women’s Divisions',
         ),
@@ -34,46 +41,54 @@ class _WeightClassesScreenState extends State<WeightClassesScreen> {
       body: FutureBuilder<List<Ranking>>(
         future: _futureRankings,
         builder: (context, snapshot) {
+          // 3. Show loading spinner while waiting
           if (snapshot.connectionState == ConnectionState.waiting) {
-            // Still loading
             return const Center(child: CircularProgressIndicator());
           }
+          // 4. Handle errors
           if (snapshot.hasError) {
-            // Network or parsing error
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          // We have valid data
-          final all = snapshot.data!;
-          // Filter by prefix: e.g. 'mens-' or 'womens-'
-          final filtered = all.where((r) {
-            return widget.gender == 'men'
-                ? r.id.startsWith('mens-')
-                : r.id.startsWith('womens-');
-          }).toList();
+          // 5. Data loaded successfully
+          final allDivisions = snapshot.data!;
 
+          // 6. Filter out P4P rankings and split by gender
+          final menClasses = allDivisions.where((r) =>
+            !r.id.startsWith('womens-') ||
+            r.id.contains('mens-pound-for-pound')
+          ).toList();
+
+          final womenClasses = allDivisions.where((r) =>
+            r.id.startsWith('womens-') ||
+            r.id.contains('womens-pound-for-pound')
+          ).toList();
+
+          final filtered = widget.gender == 'men' ? menClasses : womenClasses;
+
+          // 7. Show message if no divisions found
           if (filtered.isEmpty) {
-            // No divisions found for this gender
             return const Center(child: Text('No divisions found.'));
           }
 
-          // Display the list
+          // 8. Display list of divisions
           return ListView.separated(
             itemCount: filtered.length,
             separatorBuilder: (_, __) => const Divider(),
-            itemBuilder: (context, i) {
-              final div = filtered[i];
+            itemBuilder: (context, index) {
+              final division = filtered[index];
               return ListTile(
-                title: Text(div.categoryName),
-                subtitle: Text('Champion: ${div.champion.championName}'),
+                title: Text(division.categoryName),
+                subtitle: Text('Champion: ${division.champion.championName}'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
+                  // 9. Navigate to list of fighters for this division
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => FighterListScreen(
-                        divisionId: div.id,
-                        divisionName: div.categoryName,
+                        divisionId: division.id,
+                        divisionName: division.categoryName,
                       ),
                     ),
                   );

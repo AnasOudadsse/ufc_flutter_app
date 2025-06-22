@@ -1,22 +1,24 @@
+// lib/models/fighter_detail.dart
+
 /// Detailed information about a fighter from the Octagon API.
 class FighterDetail {
-  final String name;           // Full name
-  final String nickname;       // Fighter’s nickname
-  final String category;       // Division name
-  final String status;         // "Active" or "Retired"
-  final int wins;              // Number of wins
-  final int losses;            // Number of losses
-  final int draws;             // Number of draws
-  final int age;               // Age in years
-  final double height;         // Height in inches
-  final double weight;         // Weight in pounds
-  final double reach;          // Reach in inches
-  final double legReach;       // Leg reach in inches
-  final String octagonDebut;   // Date of Octagon debut as raw string
-  final String placeOfBirth;   // Fighter’s place of birth
-  final String trainsAt;       // Training facility
-  final String fightingStyle;  // Fighting style
-  final String imgUrl;         // URL to fighter’s image
+  final String name;           
+  final String nickname;       
+  final String category;       
+  final String status;         
+  final int wins;              
+  final int losses;            
+  final int draws;             
+  final int age;               
+  final double height;         
+  final double weight;         
+  final double reach;          
+  final double legReach;       
+  final String octagonDebut;   
+  final String placeOfBirth;   
+  final String trainsAt;       
+  final String fightingStyle;  
+  final String imgUrl;         
 
   FighterDetail({
     required this.name,
@@ -38,26 +40,34 @@ class FighterDetail {
     required this.imgUrl,
   });
 
-  /// Creates a FighterDetail from JSON.
+  /// Safely parse a String (or default to empty).
+  static String _str(dynamic v) => v?.toString() ?? '';
+
+  /// Safely parse an int from a String (or default to 0).
+  static int _int(dynamic v) => int.tryParse(v?.toString() ?? '') ?? 0;
+
+  /// Safely parse a double from a String (or default to 0.0).
+  static double _dbl(dynamic v) => double.tryParse(v?.toString() ?? '') ?? 0.0;
+
   factory FighterDetail.fromJson(Map<String, dynamic> json) {
     return FighterDetail(
-      name: json['name'] as String,
-      nickname: json['nickname'] as String,
-      category: json['category'] as String,
-      status: json['status'] as String,
-      wins: int.parse(json['wins'] as String),
-      losses: int.parse(json['losses'] as String),
-      draws: int.parse(json['draws'] as String),
-      age: int.parse(json['age'] as String),
-      height: double.parse(json['height'] as String),
-      weight: double.parse(json['weight'] as String),
-      reach: double.parse(json['reach'] as String),
-      legReach: double.parse(json['legReach'] as String),
-      octagonDebut: json['octagonDebut'] as String,
-      placeOfBirth: json['placeOfBirth'] as String,
-      trainsAt: json['trainsAt'] as String,
-      fightingStyle: json['fightingStyle'] as String,
-      imgUrl: json['imgUrl'] as String,
+      name:           _str(json['name']),
+      nickname:       _str(json['nickname']),
+      category:       _str(json['category']),
+      status:         _str(json['status']),
+      wins:           _int(json['wins']),
+      losses:         _int(json['losses']),
+      draws:          _int(json['draws']),
+      age:            _int(json['age']),
+      height:         _dbl(json['height']),
+      weight:         _dbl(json['weight']),
+      reach:          _dbl(json['reach']),
+      legReach:       _dbl(json['legReach']),
+      octagonDebut:   _str(json['octagonDebut']),
+      placeOfBirth:   _str(json['placeOfBirth']),
+      trainsAt:       _str(json['trainsAt']),
+      fightingStyle:  _str(json['fightingStyle']),
+      imgUrl:         _str(json['imgUrl']),
     );
   }
 }

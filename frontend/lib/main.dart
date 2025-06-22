@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ufc_flutter_app/pages/gender_selection_screen.dart';
-
+  
 void main() {
   runApp(const MmaApp());
 }

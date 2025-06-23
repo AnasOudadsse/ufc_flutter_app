@@ -1,15 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/fighter_detail.dart';
 import '../services/api_service.dart';
 
-/// Screen displaying detailed information about a single fighter.
+/// Screen displaying detailed information about a single fighter,
+/// including a map of their birthplace (web-compatible HTTP geocoding).
 class FighterDetailScreen extends StatefulWidget {
-  /// ID of the fighter to fetch.
   final String fighterId;
-
   const FighterDetailScreen({Key? key, required this.fighterId})
     : super(key: key);
-
   @override
   _FighterDetailScreenState createState() => _FighterDetailScreenState();
 }
@@ -20,8 +22,32 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Kick off the API call
     _futureFighter = ApiService().getFighterDetail(widget.fighterId);
+  }
+
+  /// Uses Nominatim (OpenStreetMap) for free geocoding
+  Future<LatLng?> _geocodeAddress(String address) async {
+    if (address.isEmpty) return null;
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(address)}&format=json&limit=1',
+      );
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'ufc_flutter_app'},
+      );
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        if (data.isNotEmpty) {
+          final lat = double.parse(data[0]['lat']);
+          final lon = double.parse(data[0]['lon']);
+          return LatLng(lat, lon);
+        }
+      }
+    } catch (e) {
+      debugPrint('Geocode error: $e');
+    }
+    return null;
   }
 
   @override
@@ -30,25 +56,22 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
       appBar: AppBar(title: const Text('Fighter Details')),
       body: FutureBuilder<FighterDetail>(
         future: _futureFighter,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+        builder: (ctx, snap) {
+          if (snap.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: \${snapshot.error}'));
+          if (snap.hasError) {
+            debugPrint('API error: ${snap.error}');
+            return const Center(child: Text('Failed to load fighter.'));
           }
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No data available.'));
-          }
+          final fighter = snap.data;
+          if (fighter == null) return const Center(child: Text('No data.'));
 
-          final fighter = snapshot.data!;
-
-          // Proxy image requests through a CORS proxy to prevent browser
-          // cross-origin errors when running on the web.
+          // Keep existing CORS proxy logic for images
           final proxiedUrl = 'https://proxy.cors.sh/${fighter.imgUrl}';
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -62,24 +85,17 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
                         'x-cors-api-key':
                             'temp_904ff571b848f9d23f6896b901b91e3d',
                       },
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value:
-                                progress.expectedTotalBytes != null
-                                    ? progress.cumulativeBytesLoaded /
-                                        progress.expectedTotalBytes!
-                                    : null,
-                          ),
-                        );
-                      },
+                      loadingBuilder:
+                          (c, child, prog) =>
+                              prog == null
+                                  ? child
+                                  : const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                       errorBuilder:
-                          (context, error, stack) =>
-                              const Icon(Icons.broken_image, size: 80),
+                          (c, e, s) => const Icon(Icons.broken_image, size: 80),
                     ),
                   ),
-
                 const SizedBox(height: 16),
                 Text(
                   fighter.name,
@@ -96,7 +112,6 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-
                 const Divider(height: 32),
                 Text(
                   'Record: ${fighter.wins}-${fighter.losses}-${fighter.draws}',
@@ -106,7 +121,6 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
                 Text('Weight: ${fighter.weight} lbs'),
                 Text('Reach: ${fighter.reach}"'),
                 Text('Leg Reach: ${fighter.legReach}"'),
-
                 const Divider(height: 32),
                 _infoRow('Division', fighter.category),
                 _infoRow('Status', fighter.status),
@@ -114,6 +128,52 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
                 _infoRow('Birthplace', fighter.placeOfBirth),
                 _infoRow('Trains At', fighter.trainsAt),
                 _infoRow('Style', fighter.fightingStyle),
+                const SizedBox(height: 32),
+                // Map section
+                if (fighter.placeOfBirth.isEmpty)
+                  const Text('No birthplace provided.')
+                else
+                  FutureBuilder<LatLng?>(
+                    future: _geocodeAddress(fighter.placeOfBirth),
+                    builder: (c, gSnap) {
+                      if (gSnap.connectionState != ConnectionState.done) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (gSnap.hasError)
+                        debugPrint('Map error: ${gSnap.error}');
+                      final pos = gSnap.data;
+                      if (pos == null) return const Text('Map not available.');
+                      return SizedBox(
+                        height: 200,
+                        child: FlutterMap(
+                          options: MapOptions(center: pos, zoom: 10),
+                          children: [
+                            TileLayer(
+                              urlTemplate:
+                                  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              subdomains: ['a', 'b', 'c'],
+                              userAgentPackageName:
+                                  'com.example.ufc_flutter_app',
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: pos,
+                                  width: 40,
+                                  height: 40,
+                                  child: const Icon(
+                                    Icons.location_pin,
+                                    color: Colors.red,
+                                    size: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           );
@@ -122,7 +182,6 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
     );
   }
 
-  /// Helper to render label + value rows
   Widget _infoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

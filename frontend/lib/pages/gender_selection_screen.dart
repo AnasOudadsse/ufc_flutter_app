@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ufc_flutter_app/pages/ranking_screen.dart';
 import 'weight_classes_screen.dart'; // we’ll build this next
 
 /// Lets the user choose Men’s or Women’s divisions.
@@ -37,6 +38,19 @@ class GenderSelectionScreen extends StatelessWidget {
                 );
               },
               child: const Text('Women’s Divisions'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // Navigate to next screen, passing 'women'
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RankingScreen(),
+                  ),
+                );
+              },
+              child: const Text('Ranking'),
             ),
           ],
         ),

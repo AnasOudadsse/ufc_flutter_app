@@ -58,6 +58,10 @@ class _FighterDetailScreenState extends State<FighterDetailScreen> {
                       proxiedUrl,
                       height: 200,
                       fit: BoxFit.contain,
+                      headers: const {
+                        'x-cors-api-key':
+                            'temp_904ff571b848f9d23f6896b901b91e3d',
+                      },
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
                         return Center(

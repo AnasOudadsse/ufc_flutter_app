@@ -14,12 +14,7 @@ class RankingScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Pound-for-Pound Rankings'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Men'),
-              Tab(text: 'Women'),
-            ],
-          ),
+          bottom: const TabBar(tabs: [Tab(text: 'Men'), Tab(text: 'Women')]),
         ),
         body: const TabBarView(
           children: [
@@ -32,7 +27,7 @@ class RankingScreen extends StatelessWidget {
   }
 }
 
-/// Internal widget: fetches and displays one gender’s P4P list.
+/// Internal widget: fetches and displays one gender's P4P list.
 class _P4PRankingList extends StatelessWidget {
   final String gender; // 'men' or 'women'
   const _P4PRankingList({Key? key, required this.gender}) : super(key: key);
@@ -50,9 +45,10 @@ class _P4PRankingList extends StatelessWidget {
         }
         final all = snapshot.data!;
         // Determine P4P category ID
-        final p4pId = gender == 'men'
-            ? 'mens-pound-for-pound-top-rank'
-            : 'womens-pound-for-pound-top-rank';
+        final p4pId =
+            gender == 'men'
+                ? 'mens-pound-for-pound-top-rank'
+                : 'womens-pound-for-pound-top-rank';
         final ranking = all.firstWhere(
           (r) => r.id == p4pId,
           orElse: () => throw Exception('No P4P ranking for \$gender'),
@@ -68,7 +64,7 @@ class _P4PRankingList extends StatelessWidget {
             final isChampion = fighter.id == ranking.champion.id;
             return ListTile(
               leading: Text(
-                '\$position',
+                "$position",
                 style: TextStyle(
                   fontWeight: isChampion ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -85,9 +81,7 @@ class _P4PRankingList extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => FighterDetailScreen(
-                      fighterId: fighter.id,
-                    ),
+                    builder: (_) => FighterDetailScreen(fighterId: fighter.id),
                   ),
                 );
               },

@@ -21,17 +21,10 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen> {
     FavoritesPage(),
   ];
 
-  static const List<String> _titles = [
-    "Men's Divisions",
-    "Women's Divisions",
-    'Ranking',
-    'Favorites',
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_selectedIndex])),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
